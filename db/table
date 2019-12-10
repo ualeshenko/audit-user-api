@@ -1,0 +1,5 @@
+CREATE TABLE hosts (
+    host_id int,
+    hostname text,
+    users test,
+);
