@@ -6,39 +6,53 @@ import json
 app = Flask(__name__)
 api = Api(app)
 
-def mysql_insert(host_id,hostname, users):
+def mysql_insert(id_mb, timestamp, hostname, ipv4, users):
+    
     mydb = mysql.connector.connect(
       host="localhost",
       user="dev",
       passwd="fallout",
       database="audit"
     )
+    cursor = mydb.cursor()
+    print("SELECT")
+    cursor.execute("SELECT * FROM hosts WHERE id_mb=%s", (id_mb,))
 
-    mycursor = mydb.cursor()
+    if len( cursor.fetchall() ) == 0:
+        try:
+            print("INSERT")
+            cursor.execute("""INSERT INTO hosts (id_mb, timestamp, hostname, ipv4, users) VALUES (%s, %s, %s, %s, %s)""", ( id_mb, timestamp, hostname, ipv4, users ))
+        except mydb.Error as error:
+            print("Error: {}".format(error))
+    else:
+        print("UPDATE")
+        cursor.execute ("""
+           UPDATE hosts
+           SET id_mb=%s, timestamp=%s, hostname=%s, ipv4=%s, users=%s
+           WHERE id_mb=%s
+           """, ( id_mb, timestamp, hostname, ipv4, users, id_mb ))   
 
-    print(hostname, users)
-    sql = "INSERT INTO hosts (host_id, hostname, users) VALUES (%s, %s, %s)"
-    #sql = "INSERT INTO hosts (host_id, hostname, users) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE hostname = VALUES(hostname), users = VALUES(users)"
-    #sql = "IF EXISTS(select * from hosts where id=%s) update hosts set hostname='%s' users='%s' where id=3012 ELSE insert into test(name) values('john');"
-    var = ( host_id, hostname, users )
-    mycursor.execute(sql, var)
     mydb.commit()
 
 @app.route('/post', methods=['POST'])
 def post():
       parser = reqparse.RequestParser()
-      parser.add_argument("host_id")
+      parser.add_argument("timestamp")
+      parser.add_argument("id_mb")
       parser.add_argument("hostname")
+      parser.add_argument("ipv4")
       parser.add_argument("users")
       params = parser.parse_args()
  
       host_post = {
-          "host_id": params["host_id"],    
+          "timestamp": params["timestamp"],
+          "id_mb": params["id_mb"],    
           "hostname": params["hostname"],
+          "ipv4": params["ipv4"],
           "users": params["users"]
       }
 
-      mysql_insert(params["host_id"],  params["hostname"], params["users"])
+      mysql_insert(params["id_mb"], params["timestamp"], params["hostname"], params["ipv4"], params["users"])
 
       return host_post, 201
 
