@@ -1,7 +1,8 @@
 from flask import Flask
 from flask_restful import Api, Resource, reqparse
 import mysql.connector
-import json, os
+import os
+
 
 app = Flask(__name__)
 api = Api(app)
@@ -22,8 +23,8 @@ def mysql_insert(id_mb, timestamp, hostname, mac, ipv4, users):
         try:
             print("INSERT")
             cursor.execute("""INSERT INTO hosts (id_mb, timestamp, hostname, mac, ipv4, users) VALUES (%s, %s, %s, %s, %s, %s)""", ( id_mb, timestamp, hostname, mac, ipv4, users ))
-        except mydb.Error as error:
-            print("Error: {}".format(error))
+        except mysql.connector.Error as e:
+            print("Error: {}".format(e))
     else:
         print("UPDATE")
         cursor.execute ("""
@@ -44,10 +45,7 @@ def check_user(users):
             return "Ok"
         else:
             print('Kill {}'.format(user_ipa))
-            kill_users = {
-                "name": user_ipa
-            }
-            return kill_users
+            return user_ipa
 
 @app.route('/post', methods=['POST'])
 def post():
